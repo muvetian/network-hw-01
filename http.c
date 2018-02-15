@@ -19,6 +19,22 @@ int header_complete(char *buffer, int buffer_length) {
 }
 
 int header_parse(char *buffer, int buffer_length, char *filename, int filename_length, char *protocol, int protocol_length, int *content_length) {
+	char* appearance = strstr(buffer, "GET / HTTP/1.");
+	if (appearance!= NULL) {
+		char protocal_str[protocol_length];
+		for(int i = 0; i <  protocol_length;i++){
+			protocal_str[i] = appearance[6+i];
+		}
+		strcpy(protocal_str,protocol);
+		char filename_str[filename_length];
+		for(int j = 0; j < filename_length;j++){
+			filename_str[j] = apperance[14]
+		}
+	}
+	else{
+		perror("The request is not legal");
+		//return?
+	}
 	if(!buffer || !filename || !protocol || !content_length) {
 		fprintf(stderr, "Please provide non-null buffer/filename/protocol/content-length\n");
 
