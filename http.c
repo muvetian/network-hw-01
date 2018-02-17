@@ -19,25 +19,50 @@ int header_complete(char *buffer, int buffer_length) {
 }
 
 int header_parse(char *buffer, int buffer_length, char *filename, int filename_length, char *protocol, int protocol_length, int *content_length) {
-	char* appearance = strstr(buffer, "GET / HTTP/1.");
-	if (appearance!= NULL) {
-		char protocal_str[protocol_length];
-		for(int i = 0; i <  protocol_length;i++){
-			protocal_str[i] = appearance[6+i];
+	int put_flag = 0;
+	printf("did it?");
+	char* request = strstr(buffer,"GET");
+	if(request == NULL){
+		request = strstr(buffer,"PUT");
+		if( request == NULL || request - buffer != 0){
+			fprintf(stderr, "Please provide a legal argument\n");
+			return -1;
 		}
-		strcpy(protocal_str,protocol);
-		char filename_str[filename_length];
-		for(int j = 0; j < filename_length;j++){
-			filename_str[j] = apperance[14]
+		else{
+			put_flag = 1;
 		}
 	}
+	else if(request - buffer != 0){
+		fprintf(stderr, "Please provide a legal argument\n");
+		return -1;
+	}
+
 	else{
-		perror("The request is not legal");
-		//return?
+		char* filename_ptr = strstr(buffer, "/") + 1;
+		char* protocol_ptr = strstr(buffer,"HTTP/1.");
+
+		*(protocol_ptr-1) = '\0';
+		char* protocol_ptr_end = strstr(buffer,"\r\n\r\n");
+		*(protocol_ptr_end-1) = '\0';
+
+		if(filename_ptr[0] == '\0'){
+
+			strncpy(filename,"index.html",filename_length);
+		}
+		else{
+			strncpy(filename,filename_ptr,filename_length);
+		}
+
+		strncpy(protocol,protocol_ptr,protocol_length);
+		if(put_flag == 1){
+			char* content_length_ptr = strstr(buffer, "Content-length:");
+			char* length = strstr(content_length_ptr," ")+1;
+			*content_length = atoi(length);
+
+		}
 	}
 	if(!buffer || !filename || !protocol || !content_length) {
 		fprintf(stderr, "Please provide non-null buffer/filename/protocol/content-length\n");
-
 		return -1;
 	}
 

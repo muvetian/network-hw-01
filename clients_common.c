@@ -61,7 +61,7 @@ int read_request(struct client *client) {
 
 		client->state = E_SEND_REPLY;
 
-		break;
+
 	}
 
 	return 1;
