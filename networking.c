@@ -14,6 +14,8 @@
 
 #include "networking.h"
 
+#define BUFFER_SIZE 1024
+
 int create_server(int port) {
 	int result;
 	struct addrinfo result_hints;
@@ -35,6 +37,7 @@ int create_server(int port) {
 	int listen_socket;
 
 	for(struct addrinfo *result_curr = result_list; result_curr != NULL; result_curr = result_curr->ai_next) {
+
 		// Listening socket creation
 
 		listen_socket = socket(result_curr->ai_family, result_curr->ai_socktype, result_curr->ai_protocol);
@@ -46,12 +49,18 @@ int create_server(int port) {
 		// Binding to a local address/port
 
 		result = bind(listen_socket, result_curr->ai_addr, result_curr->ai_addrlen);
-
 		if(result == -1) {
 			close(listen_socket);
 			listen_socket = -1;
 
 			continue;
+		}
+		// Set listen_socket option to 'reusable', so that if the port it is binded to is not actively listening,
+		// it can be used by other sockets.
+		int yes=1;
+		if (setsockopt(listen_socket,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof(yes)) == -1) {
+		    perror("setsockopt");
+		    exit(1);
 		}
 
 		print_address_information("Listening in address [%s] port [%s]\n", result_curr->ai_addr, result_curr->ai_addrlen);
@@ -68,12 +77,12 @@ int create_server(int port) {
 	// Listen for connections
 
 	result = listen(listen_socket, 5);
-
 	if(result == -1) {
 		perror("Impossible to listen to connections");
 
 		return -1;
 	}
+
 	int client_socket;
 	struct sockaddr_storage client_socket_address;
 	socklen_t client_socket_size;
@@ -89,16 +98,8 @@ int create_server(int port) {
 	}
 
 	// Read from client and echo its messages
-
 	while(1) {
-		int yes=1;
-		// lose the pesky "Address already in use" error message
-		if (setsockopt(listen_socket,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof yes) == -1) {
-		    perror("setsockopt");
-		    exit(1);
-		}
 		client_socket = accept(listen_socket, (struct sockaddr *) &client_socket_address, &client_socket_size);
-
 		if(client_socket == -1) {
 			perror("Cannot accept client");
 
@@ -109,7 +110,6 @@ int create_server(int port) {
 		print_address_information("Connection from client from [%s] port [%s]\n", (struct sockaddr *) &client_socket_address, client_socket_size);
 
 		int pid = fork();
-
 		if(pid != 0) {
 			// Server executes this
 			close(client_socket);
@@ -118,15 +118,38 @@ int create_server(int port) {
 			// Client executes this
 			handle_client(client_socket);
 			close(client_socket);
-
 			// This call is important
 			exit(0);
 		}
 	}
+	return 0;
+}
+int handle_client(int client_socket) {
+	// Read from client and echo its messages
 
+	char buffer[BUFFER_SIZE];
+	int nread;
 
+	while((nread = read(client_socket, buffer, BUFFER_SIZE - 1)) > 0) {
+		buffer[nread] = '\0';
+		printf("%s", buffer);
+	}
 
-	return -1;
+	return 0;
+}
+void print_address_information(char *template, struct sockaddr *address, int address_size) {
+	int result;
+
+	char host[1024];
+	char port[16];
+
+	result = getnameinfo(address, address_size, host, 1024, port, 16, NI_NUMERICHOST | NI_NUMERICSERV);
+
+	if(result != 0) {
+		perror("Error obtaining information from client");
+	}
+
+	printf(template, host, port);
 }
 
 int accept_client(int accept_socket) {
