@@ -44,7 +44,29 @@ int read_request(struct client *client) {
 	int result;
 
 	// TODO: don't live dangerously
-	read(client->socket, client->buffer, BUFFER_SIZE - 1);
+	char buffer[BUFFER_SIZE];
+
+	int nread;
+	//using a while loop so that read function will be executed several times
+	while((nread = read(client->socket, buffer, BUFFER_SIZE - 1)) > 0) {
+		client->nread = nread;
+		buffer[nread] = '\0';
+		// printf("%s", buffer);
+	}
+	while(client->ntowrite > 0) {
+		result = write(client->socket, buffer + client->nwritten, client->ntowrite);
+
+		if(result == -1) {
+			perror("write");
+
+			return -1;
+		}
+
+		client->nwritten += result;
+		client->ntowrite -= result;
+	}
+
+	// read(client->socket, client->buffer, BUFFER_SIZE - 1);
 
 	if(header_complete(client->buffer, client->nread)) {
 		// If you want to print what's in the request

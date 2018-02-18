@@ -20,7 +20,7 @@ int header_complete(char *buffer, int buffer_length) {
 
 int header_parse(char *buffer, int buffer_length, char *filename, int filename_length, char *protocol, int protocol_length, int *content_length) {
 	int put_flag = 0;
-	printf("did it?");
+
 	char* request = strstr(buffer,"GET");
 	if(request == NULL){
 		request = strstr(buffer,"PUT");
@@ -32,18 +32,19 @@ int header_parse(char *buffer, int buffer_length, char *filename, int filename_l
 			put_flag = 1;
 		}
 	}
-	else if(request - buffer != 0){
+	if(request - buffer != 0){
 		fprintf(stderr, "Please provide a legal argument\n");
 		return -1;
 	}
 
 	else{
+		printf("the put_flag is :%d",put_flag);
 		char* filename_ptr = strstr(buffer, "/") + 1;
 		char* protocol_ptr = strstr(buffer,"HTTP/1.");
-
-		*(protocol_ptr-1) = '\0';
 		char* protocol_ptr_end = strstr(buffer,"\r\n\r\n");
 		*(protocol_ptr_end-1) = '\0';
+		*(protocol_ptr-1) = '\0';
+
 
 		if(filename_ptr[0] == '\0'){
 
