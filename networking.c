@@ -77,7 +77,7 @@ int create_server(int port) {
 
 	// Read from client and echo its messages
 	int yes=1;
-			// lose the pesky "Address already in use" error message
+	// lose the pesky "Address already in use" error message
 	if (setsockopt(listen_socket,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof yes) == -1) {
 		perror("setsockopt");
 		exit(1);
