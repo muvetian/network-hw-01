@@ -57,7 +57,7 @@ int header_parse(char *buffer, int buffer_length, char *filename, int filename_l
 
 	buffer[buffer_length] = '\0';
 
-	return -1;
+	return METHOD_GET;
 }
 
 void fill_reply_200(char *buffer, char *filename, char *protocol, int filesize) {

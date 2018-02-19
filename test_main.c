@@ -4,7 +4,7 @@
 
 #include "http.h"
 
-int main(){
+int notmain(){
   char buffer[4048];
   char filename[128];
   char protocol[16];

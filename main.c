@@ -20,14 +20,14 @@ void handle_children(int signal);
 static int done = 0;
 static atomic_ulong operations_completed;
 
-int notmain(int argc, char **argv) {
-	if(argc < 2) {
-		fprintf(stderr, "Usage: server <port>\n");
+int main(int argc, char **argv) {
+//	if(argc < 2) {
+//		fprintf(stderr, "Usage: server <port>\n");
+//
+//		return EXIT_FAILURE;
+//	}
 
-		return EXIT_FAILURE;
-	}
-
-	char *port = argv[1];
+	char *port =  "8080"; //argv[1];
 
 	int accept_socket = create_server(atoi(port));
 
@@ -61,7 +61,7 @@ int notmain(int argc, char **argv) {
 		get_peer_information(client_socket, host, 1024, &port);
 		printf("New connection from %s, port %d\n", host, port);
 
-		pid_t pid = fork();
+		pid_t pid = 0; //fork();
 
 		if(pid == 0) {
 			struct client *client = make_client(client_socket);
