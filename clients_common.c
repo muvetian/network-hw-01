@@ -109,7 +109,7 @@ void handle_get(struct client *client) {
 	//         (i) read a chunk from the file into temporary_buffer;
 	//         (ii) flushes that chunk to the client
 	FILE *fp = NULL;
-	printf("got to get request")
+	printf("got to get request");
 	if((fp = fopen(filename,"r"))){
 		for(int i = 0; i < obtain_file_size(filename)/BUFFER_SIZE; i++){
 			fread(temporary_buffer,BUFFER_SIZE,1,fp);
