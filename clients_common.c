@@ -49,24 +49,8 @@ int read_request(struct client *client) {
 	int nread;
 	//using a while loop so that read function will be executed several times
 	while((nread = read(client->socket, buffer, BUFFER_SIZE - 1)) > 0) {
-		client->nread = nread;
-		buffer[nread] = '\0';
-		// printf("%s", buffer);
+		client->nread = client->nread + nread;
 	}
-	while(client->ntowrite > 0) {
-		result = write(client->socket, buffer + client->nwritten, client->ntowrite);
-
-		if(result == -1) {
-			perror("write");
-
-			return -1;
-		}
-
-		client->nwritten += result;
-		client->ntowrite -= result;
-	}
-
-	// read(client->socket, client->buffer, BUFFER_SIZE - 1);
 
 	if(header_complete(client->buffer, client->nread)) {
 		// If you want to print what's in the request
@@ -108,20 +92,41 @@ void handle_get(struct client *client) {
 	// Otherwise, client->file is non-null and you have not only the header, but the file data to send
 	else {
 		fill_reply_200(temporary_buffer, filename, protocol, obtain_file_size(filename));
+
 	}
 
 	// If you want to print what's in the response
 	printf("Response:\n%s\n", temporary_buffer);
-
 	strcpy(client->buffer, temporary_buffer);
+	client->ntowrite = 0;
+	client->nwritten = 0;
+	flush_buffer(client);
+
 
 	// TODO: Flush the HTTP response header (copied above) to the client, and then, in a loop:
 	//         (i) read a chunk from the file into temporary_buffer;
 	//         (ii) flushes that chunk to the client
 
-	fclose(client->file);
-	client->file = NULL;
+	if((fp = fopen(filename,'r'))){
+		while(fread(temporary_buffer,BUFFER_SIZE,1,fp)){
+			fwrite(temporary_buffer,BUFFER_SIZE,1,client->file);
+		}
 
+		if(fread(temporary_buffer,obtain_file_size(filename)%BUFFER_SIZE,1,fp)){
+			fwrite(temporary_buffer,BUFFER_SIZE,1,client->file);
+		}
+		else{
+			client->file = NULL;
+			client->status = STATUS_BAD;
+		}
+
+	}
+	else{
+		client->file = NULL;
+		client->status = STATUS_BAD;
+	}
+
+	fclose(client->file);
 	client->status = STATUS_OK;
 	finish_client(client);
 }
@@ -137,7 +142,6 @@ void handle_put(struct client *client) {
 		fill_reply_403(temporary_buffer, filename, protocol);
 		client->status = STATUS_403;
 		finish_client(client);
-
 		return;
 	}
 
@@ -150,7 +154,16 @@ void handle_put(struct client *client) {
 	//         (i) read a chunk from the client into temporary_buffer, up to client->content_length;
 	//         (ii) writes that chunk into the file opened above using fwrite()
 	//       Then, copy the 201 Created header into the buffer, and flush it back to the client
-
+	while(fread(temporary_buffer,BUFFER_SIZE,1,client->file)){
+		fwrite()
+	}
+	if(fread(temporary_buffer,obtain_file_size(filename)%BUFFER_SIZE,1,fp)){
+		fwrite(temporary_buffer,BUFFER_SIZE,1,client->file);
+	}
+	else{
+		client->file = NULL;
+		client->status = STATUS_BAD;
+	}
 	fclose(client->file);
 	client->file = NULL;
 

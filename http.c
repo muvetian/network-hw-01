@@ -90,7 +90,23 @@ void fill_reply_201(char *buffer, char *filename, char *protocol) {
 }
 
 void fill_reply_403(char *buffer, char *filename, char *protocol) {
+	char msg_buffer[4048];
+	msg_buffer[0] = '\0';
+	strcat(msg_buffer,protocol);
+	strcat(msg_buffer,"403 Forbidden\nFilename: ");
+	strcat(msg_buffer,filename);
+	strcat(msg_buffer,"\n\n<HTML><p>Sorry, permission is not granted</p></HTML>");
+	strcpy(buffer,msg_buffer);
 }
 
 void fill_reply_404(char *buffer, char *filename, char *protocol) {
+	char msg_buffer[4048];
+	msg_buffer[0] = '\0';
+	strcat(msg_buffer,protocol);
+	strcat(msg_buffer,"404 Not Found\nFilename: ");
+	strcat(msg_buffer,filename);
+	strcat(msg_buffer,"\n\n<HTML><p>Whoops, the file you are looking for is not here</p></HTML>");
+
+	strcpy(buffer,msg_buffer);
+
 }
