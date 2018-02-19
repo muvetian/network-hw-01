@@ -20,7 +20,7 @@ void handle_children(int signal);
 static int done = 0;
 static atomic_ulong operations_completed;
 
-int main(int argc, char **argv) {
+int notmain(int argc, char **argv) {
 	if(argc < 2) {
 		fprintf(stderr, "Usage: server <port>\n");
 

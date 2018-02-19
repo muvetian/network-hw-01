@@ -19,49 +19,34 @@ int header_complete(char *buffer, int buffer_length) {
 }
 
 int header_parse(char *buffer, int buffer_length, char *filename, int filename_length, char *protocol, int protocol_length, int *content_length) {
-	int put_flag = 0;
 
-	char* request = strstr(buffer,"GET");
-	if(request == NULL){
-		request = strstr(buffer,"PUT");
-		if( request == NULL || request - buffer != 0){
-			fprintf(stderr, "Please provide a legal argument\n");
-			return -1;
-		}
-		else{
-			put_flag = 1;
-		}
-	}
-	if(request - buffer != 0){
+	// TODO: Your code here
+	// Starting by finding the "GET /" or "POST /" string using strcasestr()
+
+	if(strstr(buffer,"PUT")){
+		char* content_length_ptr = strstr(buffer, "Content-Length:");
+		char* length = strstr(content_length_ptr," ")+1;
+		*content_length = atoi(length);
+	} else if (strstr(buffer,"GET") == NULL) {
 		fprintf(stderr, "Please provide a legal argument\n");
 		return -1;
 	}
 
-	else{
-		printf("the put_flag is :%d",put_flag);
-		char* filename_ptr = strstr(buffer, "/") + 1;
-		char* protocol_ptr = strstr(buffer,"HTTP/1.");
-		char* protocol_ptr_end = strstr(buffer,"\r\n\r\n");
-		*(protocol_ptr_end-1) = '\0';
-		*(protocol_ptr-1) = '\0';
+	char* filename_ptr = strstr(buffer, "/")+1;
+	char* protocol_ptr = strstr(buffer,"HTTP/1.");
+	char* protocol_ptr_end = strstr(buffer,"\r\n\r\n");
+	*(protocol_ptr_end-1) = '\0';
+	*(protocol_ptr-1) = '\0';
 
 
-		if(filename_ptr[0] == '\0'){
-
-			strncpy(filename,"index.html",filename_length);
-		}
-		else{
-			strncpy(filename,filename_ptr,filename_length);
-		}
-
-		strncpy(protocol,protocol_ptr,protocol_length);
-		if(put_flag == 1){
-			char* content_length_ptr = strstr(buffer, "Content-length:");
-			char* length = strstr(content_length_ptr," ")+1;
-			*content_length = atoi(length);
-
-		}
+	if(filename_ptr[0] == '\0'){
+		strncpy(filename,"index.html",filename_length);
+	} else {
+		strncpy(filename,filename_ptr,filename_length);
 	}
+
+	strncpy(protocol,protocol_ptr,protocol_length);
+
 	if(!buffer || !filename || !protocol || !content_length) {
 		fprintf(stderr, "Please provide non-null buffer/filename/protocol/content-length\n");
 		return -1;
@@ -74,9 +59,6 @@ int header_parse(char *buffer, int buffer_length, char *filename, int filename_l
 	}
 
 	buffer[buffer_length] = '\0';
-
-	// TODO: Your code here
-	// Starting by finding the "GET /" or "POST /" string using strcasestr()
 
 	return -1;
 }
