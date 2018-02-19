@@ -7,19 +7,22 @@ C_SRCS += \
 ../clients_common.c \
 ../http.c \
 ../main.c \
-../networking.c 
+../networking.c \
+../test_main.c 
 
 OBJS += \
 ./clients_common.o \
 ./http.o \
 ./main.o \
-./networking.o 
+./networking.o \
+./test_main.o 
 
 C_DEPS += \
 ./clients_common.d \
 ./http.d \
 ./main.d \
-./networking.d 
+./networking.d \
+./test_main.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

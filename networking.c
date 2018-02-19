@@ -19,12 +19,15 @@ int create_server(int port) {
 	struct addrinfo result_hints;
 	struct addrinfo *result_list;
 
+	char str[128];
+	sprintf(str, "%d", port);
+
 	memset(&result_hints, 0, sizeof(struct addrinfo));
 
 	result_hints.ai_family = AF_UNSPEC;
 	result_hints.ai_socktype = SOCK_STREAM;
 	result_hints.ai_flags = AI_PASSIVE;
-	result = getaddrinfo(NULL, port, &result_hints, &result_list);
+	result = getaddrinfo(NULL, str, &result_hints, &result_list);
 
 	if(result != 0) {
 		perror("Cannot obtain address");

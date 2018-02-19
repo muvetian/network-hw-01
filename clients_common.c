@@ -79,6 +79,8 @@ void handle_get(struct client *client) {
 	char *filename = client->filename;
 	char *protocol = client->protocol;
 
+
+
 	// If the file does not exist... make the 404 header
 	if(access(filename, F_OK) != 0) {
 		fill_reply_404(temporary_buffer, filename, protocol);
@@ -106,22 +108,23 @@ void handle_get(struct client *client) {
 	// TODO: Flush the HTTP response header (copied above) to the client, and then, in a loop:
 	//         (i) read a chunk from the file into temporary_buffer;
 	//         (ii) flushes that chunk to the client
-
-	if((fp = fopen(filename,'r'))){
-		while(fread(temporary_buffer,BUFFER_SIZE,1,fp)){
-			fwrite(temporary_buffer,BUFFER_SIZE,1,client->file);
+	FILE *fp = NULL;
+	if((fp = fopen(filename,"r"))){
+		for(int i = 0; i < obtain_file_size(filename)/BUFFER_SIZE; i++){
+			fread(temporary_buffer,BUFFER_SIZE,1,fp);
+			strcpy(client->buffer,temporary_buffer);
+			flush_buffer(client);
 		}
-
 		if(fread(temporary_buffer,obtain_file_size(filename)%BUFFER_SIZE,1,fp)){
-			fwrite(temporary_buffer,BUFFER_SIZE,1,client->file);
-		}
-		else{
+			fread(temporary_buffer,obtain_file_size(filename)%BUFFER_SIZE,1,fp);
+			strcpy(client->buffer,temporary_buffer);
+			flush_buffer(client);
+		} else {
 			client->file = NULL;
 			client->status = STATUS_BAD;
 		}
 
-	}
-	else{
+	} else{
 		client->file = NULL;
 		client->status = STATUS_BAD;
 	}
@@ -154,20 +157,35 @@ void handle_put(struct client *client) {
 	//         (i) read a chunk from the client into temporary_buffer, up to client->content_length;
 	//         (ii) writes that chunk into the file opened above using fwrite()
 	//       Then, copy the 201 Created header into the buffer, and flush it back to the client
-	while(fread(temporary_buffer,BUFFER_SIZE,1,client->file)){
-		fwrite()
+	int nread = 0;
+	while((nread = read(client->socket, temporary_buffer, BUFFER_SIZE - 1)) > 0) {
+			client->nread = client->nread + nread;
+			fwrite(temporary_buffer,BUFFER_SIZE,1,client->file);
 	}
-	if(fread(temporary_buffer,obtain_file_size(filename)%BUFFER_SIZE,1,fp)){
-		fwrite(temporary_buffer,BUFFER_SIZE,1,client->file);
-	}
-	else{
+
+
+//	for(int chunk=0; chunk < client->content_length/BUFFER_SIZE; chunk++){
+//		if(fread(temporary_buffer,BUFFER_SIZE,1,client->file)){
+//			fwrite(temporary_buffer,BUFFER_SIZE,1,client->file);
+//		} else {
+//			client->file = NULL;
+//			fclose(client->file);
+//			client->status = STATUS_BAD;
+//		}
+//
+//	}
+	if(fread(temporary_buffer,client->content_length%BUFFER_SIZE,1,client->file)){
+		fwrite(temporary_buffer,client->content_length%BUFFER_SIZE,1,client->file);
+	} else {
 		client->file = NULL;
+		fclose(client->file);
 		client->status = STATUS_BAD;
 	}
-	fclose(client->file);
-	client->file = NULL;
 
+	fclose(client->file);
 	client->status = STATUS_OK;
+	fill_reply_201(temporary_buffer,filename,protocol);
+	strcpy(client->buffer, temporary_buffer);
 	finish_client(client);
 }
 
