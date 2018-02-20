@@ -146,16 +146,13 @@ void handle_put(struct client *client) {
 		finish_client(client);
 	}
 
-	// If you want to print what's in the response
-	// printf("Response:\n%s\n", temporary_buffer);
-
-
 	// TODO: In a loop:
 	//         (i) read a chunk from the client into temporary_buffer, up to client->content_length;
 	//         (ii) writes that chunk into the file opened above using fwrite()
 	//       Then, copy the 201 Created header into the buffer, and flush it back to the client
 	int nread = 0;
 	client->nread = 0;
+
 	while(client->nread < client->content_length) {
 		nread = read(client->socket, client->buffer, BUFFER_SIZE - 1);
 		client->nread = client->nread + nread;
