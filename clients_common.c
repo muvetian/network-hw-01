@@ -152,26 +152,16 @@ void handle_put(struct client *client) {
 	//       Then, copy the 201 Created header into the buffer, and flush it back to the client
 	int nread = 0;
 	client->nread = 0;
-
 	while(client->nread < client->content_length) {
 		nread = read(client->socket, client->buffer, BUFFER_SIZE - 1);
 		client->nread = client->nread + nread;
 		fwrite(client->buffer,nread,1,client->file);
 	}
 
-	if(fread(temporary_buffer,client->content_length%BUFFER_SIZE,1,client->file)){
-		fwrite(temporary_buffer,client->content_length%BUFFER_SIZE,1,client->file);
-	} else {
-		client->file = NULL;
-		fclose(client->file);
-		client->status = STATUS_BAD;
-	}
-
 	fclose(client->file);
 	client->status = STATUS_OK;
 	fill_reply_201(temporary_buffer,filename,protocol);
 	strcpy(client->buffer, temporary_buffer);
-
 	client->ntowrite=strlen(client->buffer);
 	client->nwritten=0;
 	flush_buffer(client);
