@@ -41,27 +41,30 @@ struct client *make_client(int socket) {
 }
 
 int read_request(struct client *client) {
-	int result;
+	int nread;
 
-	// TODO: don't live dangerously
-	read(client->socket, client->buffer, BUFFER_SIZE - 1);
+	//using a while loop so that read function will be executed several times
+	while((nread = read(client->socket, client->buffer + client->nread, BUFFER_SIZE - 1 - client->nread)) > 0) {
+		client->nread = client->nread + nread;
 
-	if(header_complete(client->buffer, client->nread)) {
-		// If you want to print what's in the request
-		printf("Request:\n%s\n", client->buffer);
+		if(header_complete(client->buffer, client->nread)) {
+			// If you want to print what's in the request
+			printf("Request:\n%s\n", client->buffer);
 
-		if((client->method = header_parse(client->buffer, client->nread, client->filename, 128, client->protocol, 16, &client->content_length)) == -1) {
-			fprintf(stderr, "Invalid header from client socket no. %d - closing connection\n", client->socket);
+			if((client->method = header_parse(client->buffer, client->nread, client->filename, 128, client->protocol, 16, &client->content_length)) == -1) {
+				fprintf(stderr, "Invalid header from client socket no. %d - closing connection\n", client->socket);
 
-			client->status = STATUS_BAD;
-			finish_client(client);
+				client->status = STATUS_BAD;
+				finish_client(client);
 
-			return 0;
+				return 0;
+			}
+
+			client->state = E_SEND_REPLY;
+			break;
+
+
 		}
-
-		client->state = E_SEND_REPLY;
-
-		break;
 	}
 
 	return 1;
@@ -72,6 +75,8 @@ void handle_get(struct client *client) {
 
 	char *filename = client->filename;
 	char *protocol = client->protocol;
+
+
 
 	// If the file does not exist... make the 404 header
 	if(access(filename, F_OK) != 0) {
@@ -86,20 +91,38 @@ void handle_get(struct client *client) {
 	// Otherwise, client->file is non-null and you have not only the header, but the file data to send
 	else {
 		fill_reply_200(temporary_buffer, filename, protocol, obtain_file_size(filename));
+
 	}
 
 	// If you want to print what's in the response
-	printf("Response:\n%s\n", temporary_buffer);
-
 	strcpy(client->buffer, temporary_buffer);
+	printf("Response:\n%s\n", client->buffer);
+	client->ntowrite = strlen(client->buffer);
+	client->nwritten = 0;
+	flush_buffer(client);
+
 
 	// TODO: Flush the HTTP response header (copied above) to the client, and then, in a loop:
 	//         (i) read a chunk from the file into temporary_buffer;
 	//         (ii) flushes that chunk to the client
+	int file_size = obtain_file_size(filename);
+
+	for(int i = 0; i < file_size/BUFFER_SIZE; i++){
+		fread(client->buffer,BUFFER_SIZE,1,client->file);
+		client->ntowrite = BUFFER_SIZE;
+		client->nwritten = 0;
+		flush_buffer(client);
+	}
+	if(fread(client->buffer,file_size%BUFFER_SIZE,1,client->file)){
+		client->ntowrite = file_size%BUFFER_SIZE;
+		client->nwritten = 0;
+		flush_buffer(client);
+	} else {
+		client->file = NULL;
+		client->status = STATUS_BAD;
+	}
 
 	fclose(client->file);
-	client->file = NULL;
-
 	client->status = STATUS_OK;
 	finish_client(client);
 }
@@ -114,25 +137,35 @@ void handle_put(struct client *client) {
 	if((client->file = fopen(filename, "w")) == NULL) {
 		fill_reply_403(temporary_buffer, filename, protocol);
 		client->status = STATUS_403;
+
+		client->ntowrite= strlen(temporary_buffer);
+		client->nwritten=0;
+		strcpy(client->buffer,temporary_buffer);
+		flush_buffer(client);
+
 		finish_client(client);
-
-		return;
 	}
-
-	// If you want to print what's in the response
-	printf("Response:\n%s\n", temporary_buffer);
-
-	strcpy(client->buffer, temporary_buffer);
 
 	// TODO: In a loop:
 	//         (i) read a chunk from the client into temporary_buffer, up to client->content_length;
 	//         (ii) writes that chunk into the file opened above using fwrite()
 	//       Then, copy the 201 Created header into the buffer, and flush it back to the client
+	int nread = 0;
+	client->nread = 0;
+	while(client->nread < client->content_length) {
+		nread = read(client->socket, client->buffer, BUFFER_SIZE - 1);
+		client->nread = client->nread + nread;
+		fwrite(client->buffer,nread,1,client->file);
+	}
 
 	fclose(client->file);
-	client->file = NULL;
-
 	client->status = STATUS_OK;
+	fill_reply_201(temporary_buffer,filename,protocol);
+	strcpy(client->buffer, temporary_buffer);
+	client->ntowrite=strlen(client->buffer);
+	client->nwritten=0;
+	flush_buffer(client);
+
 	finish_client(client);
 }
 
@@ -141,6 +174,7 @@ void write_reply(struct client *client) {
 		handle_get(client);
 	}
 	else {
+		printf("handling put\n");
 		handle_put(client);
 	}
 }

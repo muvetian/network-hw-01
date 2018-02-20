@@ -21,13 +21,13 @@ static int done = 0;
 static atomic_ulong operations_completed;
 
 int main(int argc, char **argv) {
-	if(argc < 2) {
-		fprintf(stderr, "Usage: server <port>\n");
+//	if(argc < 2) {
+//		fprintf(stderr, "Usage: server <port>\n");
+//
+//		return EXIT_FAILURE;
+//	}
 
-		return EXIT_FAILURE;
-	}
-
-	char *port = argv[1];
+	char *port = "3000"; //argv[1];
 
 	int accept_socket = create_server(atoi(port));
 

@@ -19,12 +19,15 @@ int create_server(int port) {
 	struct addrinfo result_hints;
 	struct addrinfo *result_list;
 
+	char str[128];
+	sprintf(str, "%d", port);
+
 	memset(&result_hints, 0, sizeof(struct addrinfo));
 
 	result_hints.ai_family = AF_UNSPEC;
 	result_hints.ai_socktype = SOCK_STREAM;
 	result_hints.ai_flags = AI_PASSIVE;
-	result = getaddrinfo(NULL, port, &result_hints, &result_list);
+	result = getaddrinfo(NULL, str, &result_hints, &result_list);
 
 	if(result != 0) {
 		perror("Cannot obtain address");
@@ -43,6 +46,13 @@ int create_server(int port) {
 			continue;
 		}
 
+		int yes=1;
+		// lose the pesky "Address already in use" error message
+		if (setsockopt(listen_socket,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof yes) == -1) {
+			perror("setsockopt");
+			exit(1);
+		}
+
 		// Binding to a local address/port
 
 		result = bind(listen_socket, result_curr->ai_addr, result_curr->ai_addrlen);
@@ -54,7 +64,7 @@ int create_server(int port) {
 			continue;
 		}
 
-		print_address_information("Listening in address [%s] port [%s]\n", result_curr->ai_addr, result_curr->ai_addrlen);
+
 
 		break;
 	}
@@ -74,59 +84,10 @@ int create_server(int port) {
 
 		return -1;
 	}
-	int client_socket;
-	struct sockaddr_storage client_socket_address;
-	socklen_t client_socket_size;
-
-	client_socket_size = sizeof(struct sockaddr_storage);
-
-	client_socket = accept(listen_socket, (struct sockaddr *) &client_socket_address, &client_socket_size);
-
-	if(client_socket == -1) {
-		perror("Cannot accept client");
-
-		return -1;
-	}
 
 	// Read from client and echo its messages
 
-	while(1) {
-		int yes=1;
-		// lose the pesky "Address already in use" error message
-		if (setsockopt(listen_socket,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof yes) == -1) {
-		    perror("setsockopt");
-		    exit(1);
-		}
-		client_socket = accept(listen_socket, (struct sockaddr *) &client_socket_address, &client_socket_size);
-
-		if(client_socket == -1) {
-			perror("Cannot accept client");
-
-			return -1;
-		}
-
-		// Read from client and echo its messages
-		print_address_information("Connection from client from [%s] port [%s]\n", (struct sockaddr *) &client_socket_address, client_socket_size);
-
-		int pid = fork();
-
-		if(pid != 0) {
-			// Server executes this
-			close(client_socket);
-		}
-		else {
-			// Client executes this
-			handle_client(client_socket);
-			close(client_socket);
-
-			// This call is important
-			exit(0);
-		}
-	}
-
-
-
-	return -1;
+	return listen_socket;
 }
 
 int accept_client(int accept_socket) {
