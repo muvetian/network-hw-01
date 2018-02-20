@@ -30,6 +30,8 @@ struct client {
 	int nwritten;
 	int ntowrite;
 
+	char *put_file_ptr;
+
 	char buffer[BUFFER_SIZE];
 
 	int method;

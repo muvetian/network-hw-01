@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
 //		return EXIT_FAILURE;
 //	}
 
-	char *port =  "8080"; //argv[1];
+	char *port = "3000"; //argv[1];
 
 	int accept_socket = create_server(atoi(port));
 
@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 		get_peer_information(client_socket, host, 1024, &port);
 		printf("New connection from %s, port %d\n", host, port);
 
-		pid_t pid = 0; //fork();
+		pid_t pid = fork();
 
 		if(pid == 0) {
 			struct client *client = make_client(client_socket);

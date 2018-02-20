@@ -20,7 +20,7 @@ int header_complete(char *buffer, int buffer_length) {
 
 int header_parse(char *buffer, int buffer_length, char *filename, int filename_length, char *protocol, int protocol_length, int *content_length) {
 
-	int header_type;
+	int header_type = METHOD_GET;
 	// TODO: Your code here
 	// Starting by finding the "GET /" or "POST /" string using strcasestr()
 	if(strstr(buffer,"PUT")){
@@ -32,7 +32,6 @@ int header_parse(char *buffer, int buffer_length, char *filename, int filename_l
 		fprintf(stderr, "Please provide a legal argument\n");
 		return -1;
 	}
-	header_type = METHOD_GET;
 
 	char* filename_ptr = strstr(buffer, "/")+1;
 	char* protocol_ptr = strstr(buffer,"HTTP/1.");
@@ -75,7 +74,7 @@ void fill_reply_403(char *buffer, char *filename, char *protocol) {
 	char msg_buffer[4048];
 	msg_buffer[0] = '\0';
 	strcat(msg_buffer,protocol);
-	strcat(msg_buffer,"403 Forbidden\nFilename: ");
+	strcat(msg_buffer," 403 Forbidden\nFilename: ");
 	strcat(msg_buffer,filename);
 	strcat(msg_buffer,"\n\n<HTML><p>Sorry, permission is not granted</p></HTML>");
 	strcpy(buffer,msg_buffer);
@@ -85,7 +84,7 @@ void fill_reply_404(char *buffer, char *filename, char *protocol) {
 	char msg_buffer[4048];
 	msg_buffer[0] = '\0';
 	strcat(msg_buffer,protocol);
-	strcat(msg_buffer,"404 Not Found\nFilename: ");
+	strcat(msg_buffer," 404 Not Found\nFilename: ");
 	strcat(msg_buffer,filename);
 	strcat(msg_buffer,"\n\n<HTML><p>Whoops, the file you are looking for is not here</p></HTML>");
 

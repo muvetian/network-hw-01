@@ -41,9 +41,8 @@ struct client *make_client(int socket) {
 }
 
 int read_request(struct client *client) {
-	int result;
-
 	int nread;
+
 	//using a while loop so that read function will be executed several times
 	while((nread = read(client->socket, client->buffer + client->nread, BUFFER_SIZE - 1 - client->nread)) > 0) {
 		client->nread = client->nread + nread;
@@ -96,8 +95,8 @@ void handle_get(struct client *client) {
 	}
 
 	// If you want to print what's in the response
-	printf("Response:\n%s\n", temporary_buffer);
 	strcpy(client->buffer, temporary_buffer);
+	printf("Response:\n%s\n", client->buffer);
 	client->ntowrite = strlen(client->buffer);
 	client->nwritten = 0;
 	flush_buffer(client);
@@ -138,12 +137,17 @@ void handle_put(struct client *client) {
 	if((client->file = fopen(filename, "w")) == NULL) {
 		fill_reply_403(temporary_buffer, filename, protocol);
 		client->status = STATUS_403;
-		// flush buffer here
+
+		client->ntowrite= strlen(temporary_buffer);
+		client->nwritten=0;
+		strcpy(client->buffer,temporary_buffer);
+		flush_buffer(client);
+
 		finish_client(client);
 	}
 
 	// If you want to print what's in the response
-	printf("Response:\n%s\n", temporary_buffer);
+	// printf("Response:\n%s\n", temporary_buffer);
 
 
 	// TODO: In a loop:
@@ -151,6 +155,7 @@ void handle_put(struct client *client) {
 	//         (ii) writes that chunk into the file opened above using fwrite()
 	//       Then, copy the 201 Created header into the buffer, and flush it back to the client
 	int nread = 0;
+	client->nread = 0;
 	while(client->nread < client->content_length) {
 		nread = read(client->socket, client->buffer, BUFFER_SIZE - 1);
 		client->nread = client->nread + nread;
@@ -170,7 +175,9 @@ void handle_put(struct client *client) {
 	fill_reply_201(temporary_buffer,filename,protocol);
 	strcpy(client->buffer, temporary_buffer);
 
-	// flush buffer here too
+	client->ntowrite=strlen(client->buffer);
+	client->nwritten=0;
+	flush_buffer(client);
 
 	finish_client(client);
 }
@@ -180,6 +187,7 @@ void write_reply(struct client *client) {
 		handle_get(client);
 	}
 	else {
+		printf("handling put\n");
 		handle_put(client);
 	}
 }
